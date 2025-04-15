@@ -17,9 +17,8 @@ export default function WaterJugSolver() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1000) // ms between steps
+  const [playbackSpeed, setPlaybackSpeed] = useState(1000)
 
-  // Solve the water jug problem using DFS
   const solveDFS = () => {
     setIsLoading(true)
     setError("")
@@ -27,7 +26,6 @@ export default function WaterJugSolver() {
     setCurrentStep(0)
     setIsPlaying(false)
 
-    // Validate inputs
     if (jug1Capacity <= 0 || jug2Capacity <= 0 || targetAmount <= 0) {
       setError("All values must be positive numbers")
       setIsLoading(false)
@@ -40,102 +38,46 @@ export default function WaterJugSolver() {
       return
     }
 
-    // Check if the problem is solvable using Bézout's identity
-    // The target must be a multiple of the GCD of the two capacities
-    const gcd = (a, b) => {
-      return b === 0 ? a : gcd(b, a % b)
-    }
-
+    const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b))
     const g = gcd(jug1Capacity, jug2Capacity)
     if (targetAmount % g !== 0) {
-      setError(
-        `This problem has no solution. Target must be a multiple of GCD(${jug1Capacity}, ${jug2Capacity}) = ${g}`,
-      )
+      setError(`This problem has no solution. Target must be a multiple of GCD(${jug1Capacity}, ${jug2Capacity}) = ${g}`)
       setIsLoading(false)
       return
     }
 
-    // DFS implementation
     const visited = new Set()
     const path = []
     let found = false
 
     const dfs = (jug1, jug2, steps) => {
-      // Check if we've reached the target
       if (jug1 === targetAmount || jug2 === targetAmount) {
         setSolution([...steps])
         found = true
         return
       }
 
-      // Create a unique key for this state
       const stateKey = `${jug1},${jug2}`
-
-      // Skip if we've already visited this state
       if (visited.has(stateKey)) return
-
-      // Mark as visited
       visited.add(stateKey)
-
-      // If we already found a solution, don't continue
       if (found) return
 
-      // Try all possible operations
+      if (jug1 < jug1Capacity) dfs(jug1Capacity, jug2, [...steps, { jug1: jug1Capacity, jug2, operation: "Fill Jug 1" }])
+      if (jug2 < jug2Capacity && !found) dfs(jug1, jug2Capacity, [...steps, { jug1, jug2: jug2Capacity, operation: "Fill Jug 2" }])
+      if (jug1 > 0 && !found) dfs(0, jug2, [...steps, { jug1: 0, jug2, operation: "Empty Jug 1" }])
+      if (jug2 > 0 && !found) dfs(jug1, 0, [...steps, { jug1, jug2: 0, operation: "Empty Jug 2" }])
 
-      // 1. Fill jug1
-      if (jug1 < jug1Capacity) {
-        const newSteps = [...steps, { jug1: jug1Capacity, jug2, operation: "Fill Jug 1" }]
-        dfs(jug1Capacity, jug2, newSteps)
-      }
-
-      // 2. Fill jug2
-      if (jug2 < jug2Capacity && !found) {
-        const newSteps = [...steps, { jug1, jug2: jug2Capacity, operation: "Fill Jug 2" }]
-        dfs(jug1, jug2Capacity, newSteps)
-      }
-
-      // 3. Empty jug1
-      if (jug1 > 0 && !found) {
-        const newSteps = [...steps, { jug1: 0, jug2, operation: "Empty Jug 1" }]
-        dfs(0, jug2, newSteps)
-      }
-
-      // 4. Empty jug2
-      if (jug2 > 0 && !found) {
-        const newSteps = [...steps, { jug1, jug2: 0, operation: "Empty Jug 2" }]
-        dfs(jug1, 0, newSteps)
-      }
-
-      // 5. Pour from jug1 to jug2
       if (jug1 > 0 && jug2 < jug2Capacity && !found) {
         const amountToPour = Math.min(jug1, jug2Capacity - jug2)
-        const newSteps = [
-          ...steps,
-          {
-            jug1: jug1 - amountToPour,
-            jug2: jug2 + amountToPour,
-            operation: "Pour Jug 1 → Jug 2",
-          },
-        ]
-        dfs(jug1 - amountToPour, jug2 + amountToPour, newSteps)
+        dfs(jug1 - amountToPour, jug2 + amountToPour, [...steps, { jug1: jug1 - amountToPour, jug2: jug2 + amountToPour, operation: "Pour Jug 1 → Jug 2" }])
       }
 
-      // 6. Pour from jug2 to jug1
       if (jug2 > 0 && jug1 < jug1Capacity && !found) {
         const amountToPour = Math.min(jug2, jug1Capacity - jug1)
-        const newSteps = [
-          ...steps,
-          {
-            jug1: jug1 + amountToPour,
-            jug2: jug2 - amountToPour,
-            operation: "Pour Jug 2 → Jug 1",
-          },
-        ]
-        dfs(jug1 + amountToPour, jug2 - amountToPour, newSteps)
+        dfs(jug1 + amountToPour, jug2 - amountToPour, [...steps, { jug1: jug1 + amountToPour, jug2: jug2 - amountToPour, operation: "Pour Jug 2 → Jug 1" }])
       }
     }
 
-    // Start DFS with both jugs empty
     dfs(0, 0, [{ jug1: 0, jug2: 0, operation: "Initial state" }])
 
     if (!found) {
@@ -145,7 +87,6 @@ export default function WaterJugSolver() {
     setIsLoading(false)
   }
 
-  // Handle animation playback
   useEffect(() => {
     let timer
 
@@ -162,15 +103,11 @@ export default function WaterJugSolver() {
     }
   }, [isPlaying, currentStep, solution.length, playbackSpeed])
 
-  const togglePlayback = () => {
-    setIsPlaying(!isPlaying)
-  }
-
+  const togglePlayback = () => setIsPlaying(!isPlaying)
   const resetAnimation = () => {
     setCurrentStep(0)
     setIsPlaying(false)
   }
-
   const skipToEnd = () => {
     setCurrentStep(solution.length - 1)
     setIsPlaying(false)
@@ -181,69 +118,32 @@ export default function WaterJugSolver() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="jug1">Jug 1 Capacity (liters)</Label>
-          <Input
-            id="jug1"
-            type="number"
-            min="1"
-            value={jug1Capacity}
-            onChange={(e) => setJug1Capacity(Number.parseInt(e.target.value) || 0)}
-          />
+          <Input id="jug1" type="number" min="1" value={jug1Capacity} onChange={(e) => setJug1Capacity(Number.parseInt(e.target.value) || 0)} />
         </div>
         <div>
           <Label htmlFor="jug2">Jug 2 Capacity (liters)</Label>
-          <Input
-            id="jug2"
-            type="number"
-            min="1"
-            value={jug2Capacity}
-            onChange={(e) => setJug2Capacity(Number.parseInt(e.target.value) || 0)}
-          />
+          <Input id="jug2" type="number" min="1" value={jug2Capacity} onChange={(e) => setJug2Capacity(Number.parseInt(e.target.value) || 0)} />
         </div>
         <div>
           <Label htmlFor="target">Target Amount (liters)</Label>
-          <Input
-            id="target"
-            type="number"
-            min="1"
-            value={targetAmount}
-            onChange={(e) => setTargetAmount(Number.parseInt(e.target.value) || 0)}
-          />
+          <Input id="target" type="number" min="1" value={targetAmount} onChange={(e) => setTargetAmount(Number.parseInt(e.target.value) || 0)} />
         </div>
       </div>
 
       <Button onClick={solveDFS} disabled={isLoading} className="w-full">
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Solving...
-          </>
-        ) : (
-          "Solve using DFS"
-        )}
+        {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Solving...</> : "Solve using DFS"}
       </Button>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
       {solution.length > 0 && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">
-              Solution: {currentStep + 1} of {solution.length} steps
-            </h3>
+            <h3 className="text-lg font-medium">Solution: {currentStep + 1} of {solution.length} steps</h3>
             <div className="flex space-x-2">
-              <Button variant="outline" size="icon" onClick={resetAnimation} title="Reset">
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={togglePlayback} title={isPlaying ? "Pause" : "Play"}>
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-              <Button variant="outline" size="icon" onClick={skipToEnd} title="Skip to end">
-                <SkipForward className="h-4 w-4" />
-              </Button>
+              <Button variant="outline" size="icon" onClick={resetAnimation}><RefreshCw className="h-4 w-4" /></Button>
+              <Button variant="outline" size="icon" onClick={togglePlayback}>{isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+              <Button variant="outline" size="icon" onClick={skipToEnd}><SkipForward className="h-4 w-4" /></Button>
             </div>
           </div>
 
@@ -257,21 +157,17 @@ export default function WaterJugSolver() {
             <p>{solution[currentStep].operation}</p>
           </div>
 
-          <div className="border rounded-md overflow-hidden">
-            <div className="bg-muted px-4 py-2 font-medium">Solution steps:</div>
-            <div className="max-h-60 overflow-y-auto">
+          <div className="border rounded-md overflow-x-auto">
+            <div className="bg-muted px-4 py-2 font-medium">Solution steps (scroll sideways):</div>
+            <div className="flex space-x-4 px-4 py-2 whitespace-nowrap overflow-x-auto">
               {solution.map((step, index) => (
                 <div
                   key={index}
-                  className={`px-4 py-2 border-t flex justify-between ${index === currentStep ? "bg-accent" : ""}`}
                   onClick={() => setCurrentStep(index)}
+                  className={`cursor-pointer p-2 rounded-md border shadow-sm min-w-[200px] ${index === currentStep ? "bg-accent" : "bg-background"}`}
                 >
-                  <span>
-                    {index + 1}. {step.operation}
-                  </span>
-                  <span>
-                    Jug 1: {step.jug1}L, Jug 2: {step.jug2}L
-                  </span>
+                  <div className="font-medium">Step {index + 1}</div>
+                  <div className="text-sm text-muted-foreground">{step.operation}</div>
                 </div>
               ))}
             </div>
@@ -281,4 +177,3 @@ export default function WaterJugSolver() {
     </div>
   )
 }
-
